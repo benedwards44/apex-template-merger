@@ -80,12 +80,12 @@ public class MergeFieldUtility {
 		// The matcher which returns the matched fields from the given string
 		Matcher theMatcher = thePattern.matcher(stringToMerge);
 
-        // Loop through each match
-        while (theMatcher.find()) {
+		// Loop through each match
+		while (theMatcher.find()) {
 
-        	// Add the field name to the set
-        	fieldsForQuery.add(theMatcher.group(1).trim());
-        }
+			// Add the field name to the set
+			fieldsForQuery.add(theMatcher.group(1).trim());
+		}
 
 		// Build the query
 		String theQuery = 'SELECT ' + String.join(fieldsForQuery, ',');
