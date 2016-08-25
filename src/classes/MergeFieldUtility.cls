@@ -4,7 +4,6 @@
 * @description Take a given string with merge fields and replace with values
 **/
 public class MergeFieldUtility {
-	
 
 	/**
 	*   @author Ben Edwards (ben@edwards.nz)
@@ -16,11 +15,11 @@ public class MergeFieldUtility {
 		// The pattern to match one. This accepts merge fields using {{ field_name }} syntax
 		Pattern thePattern = Pattern.compile('\\{\\{([^}]*)\\}\\}');
 
-		// The matcher
+		// The matcher which returns the matched fields from the given string
 		Matcher theMatcher = thePattern.matcher(stringToMerge);
 
 		// Query for the SObject and all related fields
-		SObject theRecord = getRecord (theMatcher, objectName, recordId);
+		SObject theRecord = getRecord (thePattern, stringToMerge, objectName, recordId);
 		
 		// Iterate over each match
 		while (theMatcher.find()) {
@@ -48,17 +47,16 @@ public class MergeFieldUtility {
 				// This is a very non-elegant way of merging in parent objects
 				// But I couldn't work out a better way to do it, so this is the best we have
 				// Supports up to 5 parent objects
-				Integer size = objectsAndField.size();
-				if (size == 2) {
+				if (objectsAndField.size() == 2) {
 					stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.getSObject(objectsAndField[0]).get(objectsAndField[1])));
 				}
-				else if (size == 3) {
+				else if (objectsAndField.size() == 3) {
 					stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.getSObject(objectsAndField[0]).getSObject(objectsAndField[1]).get(objectsAndField[2])));
 				}
-				else if (size == 4) {
+				else if (objectsAndField.size() == 4) {
 					stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.getSObject(objectsAndField[0]).getSObject(objectsAndField[1]).getSObject(objectsAndField[2]).get(objectsAndField[3])));
 				}
-				else if (size == 5) {
+				else if (objectsAndField.size() == 5) {
 					stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.getSObject(objectsAndField[0]).getSObject(objectsAndField[1]).getSObject(objectsAndField[2]).getSObject(objectsAndField[3]).get(objectsAndField[4])));
 				}
 				
@@ -75,10 +73,13 @@ public class MergeFieldUtility {
 	*   @description Do a dynamic SOQL query to get the record and required fields for the merging
 	* 	@return Return the SObject record
 	**/
-	private static SObject getRecord (Matcher theMatcher, String objectName, String recordId) {
+	private static SObject getRecord (Pattern thePattern, String stringToMerge, String objectName, String recordId) {
 
 		// The list of fields to query for
 		List<String> fieldsForQuery = new List<String>();
+
+		// The matcher which returns the matched fields from the given string
+		Matcher theMatcher = thePattern.matcher(stringToMerge);
 
         // Loop through each match
         while (theMatcher.find()) {
