@@ -87,7 +87,7 @@ public class MergeFieldUtility {
         	fieldsForQuery.add(theMatcher.group(1).trim());
         }
 
-        // Build the query
+		// Build the query
 		String theQuery = 'SELECT ' + String.join(fieldsForQuery, ',');
 		theQuery += ' FROM ' + objectName;
 		theQuery += ' WHERE Id = \'' +  recordId + '\'';
