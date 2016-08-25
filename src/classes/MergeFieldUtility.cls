@@ -8,7 +8,7 @@ public class MergeFieldUtility {
 	/**
 	*   @author Ben Edwards (ben@edwards.nz)
 	*   @description Generate the string with the replaced values
-	* 	@return Returns the string with all merge fields replaced with values
+	*   @return Returns the string with all merge fields replaced with values
 	**/
 	public static String replaceMergeFieldsWithValues (String stringToMerge, String objectName, String recordId) {
 
@@ -59,7 +59,6 @@ public class MergeFieldUtility {
 				else if (objectsAndField.size() == 5) {
 					stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.getSObject(objectsAndField[0]).getSObject(objectsAndField[1]).getSObject(objectsAndField[2]).getSObject(objectsAndField[3]).get(objectsAndField[4])));
 				}
-				
 			}
 		}
 		
@@ -71,7 +70,7 @@ public class MergeFieldUtility {
 	/**
 	*   @author Ben Edwards (ben@edwards.nz)
 	*   @description Do a dynamic SOQL query to get the record and required fields for the merging
-	* 	@return Return the SObject record
+	*   @return Return the SObject record
 	**/
 	private static SObject getRecord (Pattern thePattern, String stringToMerge, String objectName, String recordId) {
 
