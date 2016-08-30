@@ -10,7 +10,10 @@ public class MergeFieldUtility {
 	*   @description Generate the string with the replaced values
 	*   @return Returns the string with all merge fields replaced with values
 	**/
-	public static String replaceMergeFieldsWithValues (String stringToMerge, String objectName, String recordId) {
+	public static String replaceMergeFieldsWithValues (String stringToMerge, String recordId) {
+		
+		// Get the object name based on the recordId
+		String objectName = ((Id) recordId).getSObjectType().getDescribe().getName();
 
 		// The pattern to match one. This accepts merge fields using {{ field_name }} syntax
 		Pattern thePattern = Pattern.compile('\\{\\{([^}]*)\\}\\}');
