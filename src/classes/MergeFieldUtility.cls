@@ -4,6 +4,12 @@
 * @description Take a given string with merge fields and replace with values
 **/
 public class MergeFieldUtility {
+	
+	// The Pattern used for all merging. This is the {{ Field__c }} syntax.
+	// You can replace this with your own merge sync (eg. <? Field__c ?> or {!Field__c}
+	private static Pattern thePattern() {
+		return Pattern.compile('\\{\\{([^}]*)\\}\\}');
+	}
 
 	/**
 	*   @author Ben Edwards (ben@edwards.nz)
@@ -15,14 +21,11 @@ public class MergeFieldUtility {
 		// Get the object name based on the recordId
 		String objectName = ((Id) recordId).getSObjectType().getDescribe().getName();
 
-		// The pattern to match one. This accepts merge fields using {{ field_name }} syntax
-		Pattern thePattern = Pattern.compile('\\{\\{([^}]*)\\}\\}');
-
 		// The matcher which returns the matched fields from the given string
-		Matcher theMatcher = thePattern.matcher(stringToMerge);
+		Matcher theMatcher = thePattern().matcher(stringToMerge);
 
 		// Query for the SObject and all related fields
-		SObject theRecord = getRecord (thePattern, stringToMerge, objectName, recordId);
+		SObject theRecord = getRecord (stringToMerge, objectName, recordId);
 		
 		// Iterate over each match
 		while (theMatcher.find()) {
@@ -75,13 +78,13 @@ public class MergeFieldUtility {
 	*   @description Do a dynamic SOQL query to get the record and required fields for the merging
 	*   @return Return the SObject record
 	**/
-	private static SObject getRecord (Pattern thePattern, String stringToMerge, String objectName, String recordId) {
+	private static SObject getRecord (String stringToMerge, String objectName, String recordId) {
 
-		// The list of fields to query for
-		List<String> fieldsForQuery = new List<String>();
+		// The set of fields to query for
+		Set<String> fieldsForQuery = new Set<String>();
 
 		// The matcher which returns the matched fields from the given string
-		Matcher theMatcher = thePattern.matcher(stringToMerge);
+		Matcher theMatcher = thePattern().matcher(stringToMerge);
 
 		// Loop through each match
 		while (theMatcher.find()) {
@@ -90,8 +93,8 @@ public class MergeFieldUtility {
 			fieldsForQuery.add(theMatcher.group(1).trim());
 		}
 
-		// Build the query
-		String theQuery = 'SELECT ' + String.join(fieldsForQuery, ',');
+		// Build the query. The set of fields needs to be converted to a list to use String.join()
+		String theQuery = 'SELECT ' + String.join(new List<String>(fieldsForQuery), ',');
 		theQuery += ' FROM ' + objectName;
 		theQuery += ' WHERE Id = \'' +  recordId + '\'';
 
