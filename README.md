@@ -9,7 +9,6 @@ String myTemplate = 'Hey {{ FirstName }}, your email address is {{ Email }} and 
 
 String myResult = MergeFieldUtility.replaceMergeFieldsWithValues (
   myTemplate, // The string to merge
-  'Contact', // API name of the object
   '0032800000YWeRQ' // The record ID
 );
 
