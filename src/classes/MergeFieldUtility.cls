@@ -41,31 +41,29 @@ public class MergeFieldUtility {
 			// Need to determine if there is a relationship in the field. This decides how many levels up to go
 			List<String> objectsAndField = mergeField.split('\\.');
 
-			// If there's no relationship
-			if (objectsAndField.size() == 1) {
+			// The record to get the data from
+			theRecordForData = theRecord;
 
-				// Replace the matching field name with the value
-				stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.get(mergeField)));
-			}
-			// Otherwise, need to go up levels depending on how many levels there are
-			else if (objectsAndField.size() > 1) {
+			// If there is a relationship
+			if (objectsAndField.size() > 1) {
 
-				// This is a very non-elegant way of merging in parent objects
-				// But I couldn't work out a better way to do it, so this is the best we have
-				// Supports up to 5 parent objects
-				if (objectsAndField.size() == 2) {
-					stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.getSObject(objectsAndField[0]).get(objectsAndField[1])));
+				// Run through the list but skip the last item (the field)
+				for (Integer i = 0; i > objectsAndField.size() - 1; i++) {
+
+					// Get the new record to draw data from
+					theRecordForData = theRecordForData.getSObject(objectsAndField[i]);
+
 				}
-				else if (objectsAndField.size() == 3) {
-					stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.getSObject(objectsAndField[0]).getSObject(objectsAndField[1]).get(objectsAndField[2])));
-				}
-				else if (objectsAndField.size() == 4) {
-					stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.getSObject(objectsAndField[0]).getSObject(objectsAndField[1]).getSObject(objectsAndField[2]).get(objectsAndField[3])));
-				}
-				else if (objectsAndField.size() == 5) {
-					stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.getSObject(objectsAndField[0]).getSObject(objectsAndField[1]).getSObject(objectsAndField[2]).getSObject(objectsAndField[3]).get(objectsAndField[4])));
-				}
+
+				// Since we should have the correct record now we can replace the list with only it's last item (the field)
+
+				objectsAndField = new List<String>{objectsAndField[objectsAndField.size()-1]};
+
 			}
+
+			// Replace the matching field name with the value
+			stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.get(objectsAndField[0])));
+
 		}
 		
 		// Return the string with all the merge fields replaced with their values, yay!
