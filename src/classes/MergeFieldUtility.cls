@@ -42,13 +42,13 @@ public class MergeFieldUtility {
 			List<String> objectsAndField = mergeField.split('\\.');
 
 			// The record to get the data from
-			theRecordForData = theRecord;
+			SObject theRecordForData = theRecord;
 
 			// If there is a relationship
 			if (objectsAndField.size() > 1) {
 
 				// Run through the list but skip the last item (the field)
-				for (Integer i = 0; i > objectsAndField.size() - 1; i++) {
+				for (Integer i = 0; i < objectsAndField.size() - 1; i++) {
 
 					// Get the new record to draw data from
 					theRecordForData = theRecordForData.getSObject(objectsAndField[i]);
@@ -62,7 +62,7 @@ public class MergeFieldUtility {
 			}
 
 			// Replace the matching field name with the value
-			stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecord.get(objectsAndField[0])));
+			stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecordForData.get(objectsAndField[0])));
 
 		}
 		
