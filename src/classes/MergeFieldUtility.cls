@@ -7,6 +7,9 @@ public class MergeFieldUtility {
 
     // The Pattern used for all merging. This is the {{ Field__c }} syntax.
     // You can replace this with your own merge sync (eg. <? Field__c ?> or {!Field__c}
+    // Start pattern '{{ ' will be converted to '\\{\\{\\s'
+    // Capturing group will be added '([^ + First Char of End Pattern + ]*)'
+    // End pattern ' }}' will be converted to '\\s\\}\\}'
     private static Pattern thePattern(String startPattern, String endPattern) {
 
         // Make sure we have a pattern
@@ -58,12 +61,9 @@ public class MergeFieldUtility {
             // Get the field name based on the match
             String mergeField = theMatcher.group(1).trim();
 
-            // The following logic is a bit ugly. The idea is to support getting parent fields for the object
-            // This allows to go 5 levels high. If anyone knows a better way to do this, please let me know.
-            // Eg. {{ Case.Contact.Account.Name }}
-            // Eg2. {{ Child__r.Parent__r.Email }}
+            // Support getting parent fields for the object
 
-            // Need to determine if there is a relationship in the field. This decides how many levels up to go
+            // Need to determine if there is a relationship in the field. This decides how many levels to go
             List<String> objectsAndField = mergeField.split('\\.');
 
             // The record to get the data from
