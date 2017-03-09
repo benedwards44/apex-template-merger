@@ -7,8 +7,33 @@ public class MergeFieldUtility {
 
     // The Pattern used for all merging. This is the {{ Field__c }} syntax.
     // You can replace this with your own merge sync (eg. <? Field__c ?> or {!Field__c}
-    private static Pattern thePattern() {
-        return Pattern.compile('\\{\\{([^}]*)\\}\\}');
+    private static Pattern thePattern(String startPattern, String endPattern) {
+
+        // Make sure we have a pattern
+        if (String.isBlank(startPattern.trim()) || String.isBlank(endPattern.trim())) {
+            throw new MergeFieldUtilityException('Start and End pattern required!');
+        }
+
+        // Regex to capture grouping
+        String theRegex = '';
+
+        // Convert the start pattern to regex
+        for (String character : startPattern.split()) {
+            theRegex += character == ' ' ? '' : '\\' + character;
+        }
+
+        // Add Capturing Group to regex and include first end charcter to close grouping
+        theRegex += '([^'+ endPattern.trim().left(1) +'}]*)';
+
+        // Convert the end pattern to regex
+        for (String character : endPattern.split()) {
+            theRegex += character == ' ' ? '' : '\\' + character;
+        }
+
+        // Replace all spaces with whitespace capturing
+        theRegex = theRegex.replace(' ', '\\s');
+
+        return Pattern.compile(theRegex);
     }
 
 	/**
@@ -79,7 +104,7 @@ public class MergeFieldUtility {
         Set<String> fieldsForQuery = new Set<String>();
 
         // The matcher which returns the matched fields from the given string
-        Matcher theMatcher = thePattern().matcher(stringToMerge);
+        Matcher theMatcher = thePattern('{{ ', ' }}').matcher(stringToMerge);
 
         // Loop through each match
         while (theMatcher.find()) {
@@ -96,4 +121,7 @@ public class MergeFieldUtility {
         // Execute the query and record the record
         return Database.query(theQuery);
     }
+
+    // Custom Exceptions
+    public class MergeFieldUtilityException extends Exception {}
 }
