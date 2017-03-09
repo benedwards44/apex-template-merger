@@ -4,71 +4,68 @@
 * @description Take a given string with merge fields and replace with values
 **/
 public class MergeFieldUtility {
-	
-	// The Pattern used for all merging. This is the {{ Field__c }} syntax.
-	// You can replace this with your own merge sync (eg. <? Field__c ?> or {!Field__c}
-	private static Pattern thePattern() {
-		return Pattern.compile('\\{\\{([^}]*)\\}\\}');
-	}
+
+    // The Pattern used for all merging. This is the {{ Field__c }} syntax.
+    // You can replace this with your own merge sync (eg. <? Field__c ?> or {!Field__c}
+    private static Pattern thePattern() {
+        return Pattern.compile('\\{\\{([^}]*)\\}\\}');
+    }
 
 	/**
 	*   @author Ben Edwards (ben@edwards.nz)
 	*   @description Generate the string with the replaced values
 	*   @return Returns the string with all merge fields replaced with values
 	**/
-	public static String replaceMergeFieldsWithValues (String stringToMerge, String recordId) {
-		
-		// Get the object name based on the recordId
-		String objectName = ((Id) recordId).getSObjectType().getDescribe().getName();
+    public static String replaceMergeFieldsWithValues (String stringToMerge, String recordId) {
 
-		// The matcher which returns the matched fields from the given string
-		Matcher theMatcher = thePattern().matcher(stringToMerge);
+        // Get the object name based on the recordId
+        String objectName = ((Id) recordId).getSObjectType().getDescribe().getName();
 
-		// Query for the SObject and all related fields
-		SObject theRecord = getRecord (stringToMerge, objectName, recordId);
-		
-		// Iterate over each match
-		while (theMatcher.find()) {
+        // The matcher which returns the matched fields from the given string
+        Matcher theMatcher = thePattern().matcher(stringToMerge);
 
-			// Get the field name based on the match
-			String mergeField = theMatcher.group(1).trim();
+        // Query for the SObject and all related fields
+        SObject theRecord = getRecord (stringToMerge, objectName, recordId);
 
-			// The following logic is a bit ugly. The idea is to support getting parent fields for the object
-			// This allows to go 5 levels high. If anyone knows a better way to do this, please let me know.
-			// Eg. {{ Case.Contact.Account.Name }}
-			// Eg2. {{ Child__r.Parent__r.Email }}
+        // Iterate over each match
+        while (theMatcher.find()) {
 
-			// Need to determine if there is a relationship in the field. This decides how many levels up to go
-			List<String> objectsAndField = mergeField.split('\\.');
+            // Get the field name based on the match
+            String mergeField = theMatcher.group(1).trim();
 
-			// The record to get the data from
-			SObject theRecordForData = theRecord;
+            // The following logic is a bit ugly. The idea is to support getting parent fields for the object
+            // This allows to go 5 levels high. If anyone knows a better way to do this, please let me know.
+            // Eg. {{ Case.Contact.Account.Name }}
+            // Eg2. {{ Child__r.Parent__r.Email }}
 
-			// If there is a relationship
-			if (objectsAndField.size() > 1) {
+            // Need to determine if there is a relationship in the field. This decides how many levels up to go
+            List<String> objectsAndField = mergeField.split('\\.');
 
-				// Run through the list but skip the last item (the field)
-				for (Integer i = 0; i < objectsAndField.size() - 1; i++) {
+            // The record to get the data from
+            SObject theRecordForData = theRecord;
 
-					// Get the new record to draw data from
-					theRecordForData = theRecordForData.getSObject(objectsAndField[i]);
+            // If there is a relationship
+            if (objectsAndField.size() > 1) {
 
-				}
+                // Run through the list but skip the last item (the field)
+                for (Integer i = 0; i < objectsAndField.size() - 1; i++) {
 
-				// Since we should have the correct record now we can replace the list with only it's last item (the field)
+                    // Get the new record to draw data from
+                    theRecordForData = theRecordForData.getSObject(objectsAndField[i]);
+                }
 
-				objectsAndField = new List<String>{objectsAndField[objectsAndField.size()-1]};
+                // Since we should have the correct record now we can replace the list with only it's last item (the field)
+                objectsAndField = new List<String>{objectsAndField[objectsAndField.size()-1]};
+            }
 
-			}
+            // Replace the matching field name with the value
+            stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecordForData.get(objectsAndField[0])));
 
-			// Replace the matching field name with the value
-			stringToMerge = stringToMerge.replace('{{ ' + mergeField + ' }}', String.valueOf(theRecordForData.get(objectsAndField[0])));
+        }
 
-		}
-		
-		// Return the string with all the merge fields replaced with their values, yay!
-		return stringToMerge;
-	}
+        // Return the string with all the merge fields replaced with their values, yay!
+        return stringToMerge;
+    }
 
 
 	/**
@@ -76,27 +73,27 @@ public class MergeFieldUtility {
 	*   @description Do a dynamic SOQL query to get the record and required fields for the merging
 	*   @return Return the SObject record
 	**/
-	private static SObject getRecord (String stringToMerge, String objectName, String recordId) {
+    private static SObject getRecord (String stringToMerge, String objectName, String recordId) {
 
-		// The set of fields to query for
-		Set<String> fieldsForQuery = new Set<String>();
+        // The set of fields to query for
+        Set<String> fieldsForQuery = new Set<String>();
 
-		// The matcher which returns the matched fields from the given string
-		Matcher theMatcher = thePattern().matcher(stringToMerge);
+        // The matcher which returns the matched fields from the given string
+        Matcher theMatcher = thePattern().matcher(stringToMerge);
 
-		// Loop through each match
-		while (theMatcher.find()) {
+        // Loop through each match
+        while (theMatcher.find()) {
 
-			// Add the field name to the set
-			fieldsForQuery.add(theMatcher.group(1).trim());
-		}
+            // Add the field name to the set
+            fieldsForQuery.add(theMatcher.group(1).trim());
+        }
 
-		// Build the query. The set of fields needs to be converted to a list to use String.join()
-		String theQuery = 'SELECT ' + String.join(new List<String>(fieldsForQuery), ',');
-		theQuery += ' FROM ' + objectName;
-		theQuery += ' WHERE Id = \'' +  recordId + '\'';
+        // Build the query. The set of fields needs to be converted to a list to use String.join()
+        String theQuery = 'SELECT ' + String.join(new List<String>(fieldsForQuery), ',');
+        theQuery += ' FROM ' + objectName;
+        theQuery += ' WHERE Id = \'' +  recordId + '\'';
 
-		// Execute the query and record the record
-		return Database.query(theQuery);
-	}
+        // Execute the query and record the record
+        return Database.query(theQuery);
+    }
 }
