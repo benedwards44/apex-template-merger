@@ -21,7 +21,7 @@ public class MergeFieldUtility {
         String theRegex = '';
 
         // Convert the start pattern to regex
-        for (String character : startPattern.split()) {
+        for (String character : startPattern.split('')) {
             theRegex += character == ' ' ? '' : '\\' + character;
         }
 
@@ -29,7 +29,7 @@ public class MergeFieldUtility {
         theRegex += '([^'+ endPattern.trim().left(1) +'}]*)';
 
         // Convert the end pattern to regex
-        for (String character : endPattern.split()) {
+        for (String character : endPattern.split('')) {
             theRegex += character == ' ' ? '' : '\\' + character;
         }
 
@@ -39,11 +39,11 @@ public class MergeFieldUtility {
         return Pattern.compile(theRegex);
     }
 
-	/**
-	*   @author Ben Edwards (ben@edwards.nz)
-	*   @description Generate the string with the replaced values
-	*   @return Returns the string with all merge fields replaced with values
-	**/
+    /**
+    *   @author Ben Edwards (ben@edwards.nz)
+    *   @description Generate the string with the replaced values
+    *   @return Returns the string with all merge fields replaced with values
+    **/
     public static String replaceMergeFieldsWithValues (String stringToMerge, String recordId) {
 
         // Return the string with all the merge fields replaced with their values, yay!
@@ -51,17 +51,17 @@ public class MergeFieldUtility {
     }
 
     /**
-	*   @author Ben Edwards (ben@edwards.nz)
-	*   @description Generate the string with the replaced values
-	*   @return Returns the string with all merge fields replaced with values
-	**/
+    *   @author Ben Edwards (ben@edwards.nz)
+    *   @description Generate the string with the replaced values
+    *   @return Returns the string with all merge fields replaced with values
+    **/
     public static String replaceMergeFieldsWithValues (String startPattern, String endPattern, String stringToMerge, String recordId) {
 
         // Get the object name based on the recordId
         String objectName = ((Id) recordId).getSObjectType().getDescribe().getName();
 
         // The matcher which returns the matched fields from the given string
-        Matcher theMatcher = thePattern().matcher(stringToMerge);
+        Matcher theMatcher = thePattern(startPattern, endPattern).matcher(stringToMerge);
 
         // Query for the SObject and all related fields
         SObject theRecord = getRecord (startPattern, endPattern, stringToMerge, objectName, recordId);
@@ -104,11 +104,11 @@ public class MergeFieldUtility {
     }
 
 
-	/**
-	*   @author Ben Edwards (ben@edwards.nz)
-	*   @description Do a dynamic SOQL query to get the record and required fields for the merging
-	*   @return Return the SObject record
-	**/
+    /**
+    *   @author Ben Edwards (ben@edwards.nz)
+    *   @description Do a dynamic SOQL query to get the record and required fields for the merging
+    *   @return Return the SObject record
+    **/
     private static SObject getRecord (String startPattern, String endPattern, String stringToMerge, String objectName, String recordId) {
 
         // The set of fields to query for
