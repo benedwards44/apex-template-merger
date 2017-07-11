@@ -5,40 +5,6 @@
 **/
 public class MergeFieldUtility {
 
-    // The Pattern used for all merging. This is the {{ Field__c }} syntax.
-    // You can replace this with your own merge sync (eg. <? Field__c ?> or {!Field__c}
-    // Start pattern '{{ ' will be converted to '\\{\\{\\s'
-    // Capturing group will be added '([^ + First Char of End Pattern + ]*)'
-    // End pattern ' }}' will be converted to '\\s\\}\\}'
-    private static Pattern thePattern(String startPattern, String endPattern) {
-
-        // Make sure we have a pattern
-        if (String.isBlank(startPattern.trim()) || String.isBlank(endPattern.trim())) {
-            throw new MergeFieldUtilityException('Start and End pattern required!');
-        }
-
-        // Regex to capture grouping
-        String theRegex = '';
-
-        // Convert the start pattern to regex
-        for (String character : startPattern.split('')) {
-            theRegex += character == ' ' ? '' : '\\' + character;
-        }
-
-        // Add Capturing Group to regex and include first end charcter to close grouping
-        theRegex += '([^'+ endPattern.trim().left(1) +'}]*)';
-
-        // Convert the end pattern to regex
-        for (String character : endPattern.split('')) {
-            theRegex += character == ' ' ? '' : '\\' + character;
-        }
-
-        // Replace all spaces with whitespace capturing
-        theRegex = theRegex.replace(' ', '\\s');
-
-        return Pattern.compile(theRegex);
-    }
-
     /**
     *   @author Ben Edwards (ben@edwards.nz)
     *   @description Generate the string with the replaced values
@@ -49,6 +15,7 @@ public class MergeFieldUtility {
         // Return the string with all the merge fields replaced with their values, yay!
         return replaceMergeFieldsWithValues ('{{ ', ' }}', stringToMerge, recordId);
     }
+
 
     /**
     *   @author Ben Edwards (ben@edwards.nz)
@@ -104,6 +71,41 @@ public class MergeFieldUtility {
     }
 
 
+    // The Pattern used for all merging. This is the {{ Field__c }} syntax.
+    // You can replace this with your own merge sync (eg. <? Field__c ?> or {!Field__c}
+    // Start pattern '{{ ' will be converted to '\\{\\{\\s'
+    // Capturing group will be added '([^ + First Char of End Pattern + ]*)'
+    // End pattern ' }}' will be converted to '\\s\\}\\}'
+    private static Pattern thePattern(String startPattern, String endPattern) {
+
+        // Make sure we have a pattern
+        if (String.isBlank(startPattern.trim()) || String.isBlank(endPattern.trim())) {
+            throw new MergeFieldUtilityException('Start and End pattern required!');
+        }
+
+        // Regex to capture grouping
+        String theRegex = '';
+
+        // Convert the start pattern to regex
+        for (String character : startPattern.split('')) {
+            theRegex += character == ' ' ? '' : '\\' + character;
+        }
+
+        // Add Capturing Group to regex and include first end charcter to close grouping
+        theRegex += '([^'+ endPattern.trim().left(1) +'}]*)';
+
+        // Convert the end pattern to regex
+        for (String character : endPattern.split('')) {
+            theRegex += character == ' ' ? '' : '\\' + character;
+        }
+
+        // Replace all spaces with whitespace capturing
+        theRegex = theRegex.replace(' ', '\\s');
+
+        return Pattern.compile(theRegex);
+    }
+
+
     /**
     *   @author Ben Edwards (ben@edwards.nz)
     *   @description Do a dynamic SOQL query to get the record and required fields for the merging
@@ -135,4 +137,5 @@ public class MergeFieldUtility {
 
     // Custom Exceptions
     public class MergeFieldUtilityException extends Exception {}
+    
 }
