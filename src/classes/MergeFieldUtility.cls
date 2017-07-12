@@ -1,9 +1,9 @@
 /**
 * @author Ben Edwards (ben@edwards.nz)
-* @date 2016-08-25
+* @date 2017-07-12
 * @description Take a given string with merge fields and replace with values
 **/
-public class MergeFieldUtility {
+public class FieldMergeUtil {
 
     /**
     *   @author Ben Edwards (ben@edwards.nz)
@@ -13,7 +13,7 @@ public class MergeFieldUtility {
     public static String replaceMergeFieldsWithValues (String stringToMerge, String recordId) {
 
         // Return the string with all the merge fields replaced with their values, yay!
-        return replaceMergeFieldsWithValues ('{{ ', ' }}', stringToMerge, recordId);
+        return replaceMergeFieldsWithValues ('{!', '}', stringToMerge, recordId);
     }
 
 
@@ -23,6 +23,12 @@ public class MergeFieldUtility {
     *   @return Returns the string with all merge fields replaced with values
     **/
     public static String replaceMergeFieldsWithValues (String startPattern, String endPattern, String stringToMerge, String recordId) {
+
+        // If blank, return a blank value
+        if (String.isBlank(stringToMerge)) {
+
+            return stringToMerge;
+        }
 
         // Get the object name based on the recordId
         String objectName = ((Id) recordId).getSObjectType().getDescribe().getName();
@@ -40,7 +46,6 @@ public class MergeFieldUtility {
             String mergeField = theMatcher.group(1).trim();
 
             // Support getting parent fields for the object
-
             // Need to determine if there is a relationship in the field. This decides how many levels to go
             List<String> objectsAndField = mergeField.split('\\.');
 
@@ -61,8 +66,19 @@ public class MergeFieldUtility {
                 objectsAndField = new List<String>{objectsAndField[objectsAndField.size()-1]};
             }
 
+            String mergeValue = '';
+            // Attempt to replace the merge value. If it fails, it will return a blank value
+            try {
+
+                mergeValue = String.valueOf(theRecordForData.get(objectsAndField[0]));
+            }
+            catch (Exception ex) {
+
+                system.debug('### Error processing merge field "' + mergeField + '": ' + ex.getMessage() + '\n\n' + ex.getStackTraceString());
+            }
+
             // Replace the matching field name with the value
-            stringToMerge = stringToMerge.replace(startPattern + mergeField + endPattern, String.valueOf(theRecordForData.get(objectsAndField[0])));
+            stringToMerge = stringToMerge.replace(startPattern + mergeField + endPattern, mergeValue);
 
         }
 
@@ -80,7 +96,7 @@ public class MergeFieldUtility {
 
         // Make sure we have a pattern
         if (String.isBlank(startPattern.trim()) || String.isBlank(endPattern.trim())) {
-            throw new MergeFieldUtilityException('Start and End pattern required!');
+            throw new FieldMergeUtilException('Start and End pattern required!');
         }
 
         // Regex to capture grouping
@@ -111,7 +127,7 @@ public class MergeFieldUtility {
     *   @description Do a dynamic SOQL query to get the record and required fields for the merging
     *   @return Return the SObject record
     **/
-    private static SObject getRecord (String startPattern, String endPattern, String stringToMerge, String objectName, String recordId) {
+    public static SObject getRecord (String startPattern, String endPattern, String stringToMerge, String objectName, String recordId) {
 
         // The set of fields to query for
         Set<String> fieldsForQuery = new Set<String>();
@@ -122,8 +138,15 @@ public class MergeFieldUtility {
         // Loop through each match
         while (theMatcher.find()) {
 
-            // Add the field name to the set
-            fieldsForQuery.add(theMatcher.group(1).trim());
+            // Get the merge field from the match
+            String mergeField = theMatcher.group(1).trim();
+
+            // Determine if the field is valid or not
+            if (fieldIsValid(objectName, mergeField)) {
+
+                // Add the field name to the set
+                fieldsForQuery.add(mergeField);
+            }
         }
 
         // Build the query. The set of fields needs to be converted to a list to use String.join()
@@ -135,7 +158,132 @@ public class MergeFieldUtility {
         return Database.query(theQuery);
     }
 
+    /**
+    *   @author Ben Edwards (ben@edwards.nz)
+    *   @description Return true if the field is a valid field
+    *   @return True for valid field, false for invalid
+    **/
+    public static Boolean fieldIsValid (String objectName, String mergeField) {
+
+        Boolean fieldIsValid = true;
+
+        // Split the merge field into a list for each lookup field
+        List<String> objectsAndField = mergeField.split('\\.');
+
+        // If only one, it's the base object. So check that
+        if (objectsAndField.size() == 1) {
+
+            // If the map contains the field API name, then it's valid
+            fieldIsValid = objectNameToFieldsMap(objectName).get(objectName).containsKey(mergeField);
+        }
+        // Else it's a lookup. We need to go up to the parent field
+        else {
+
+            // Each time we go through a lookup, we need to update the current object name
+            String currentObjectName = objectName;
+
+            // Need to go up each object to valid the field for each object
+            for (Integer i = 0; i < objectsAndField.size(); i++) {
+
+                // Get the current field name
+                String currentFieldName = objectsAndField[i];
+
+                // If this is the last element, then it's the field we want to check
+                // on the current object
+                if (i == (objectsAndField.size() - 1)) {
+
+                    // Then check if the field exists on the current object
+                    fieldIsValid = objectNameToFieldsMap(currentObjectName).get(currentObjectName).containsKey(currentFieldName);
+                }
+                // Otherwise it's a lookup. We need to find the object name and go upwards.
+                else {
+
+                    // If a custom relationship, replace with __c
+                    if (currentFieldName.endsWith('__r')) {
+
+                        currentFieldName = currentFieldName.replace('__r','__c');
+                    }
+                    // Else it's a standard field, add Id on the end
+                    else {
+
+                        currentFieldName += 'Id';
+                    }
+
+                    // Check field exists on the current object
+                    fieldIsValid = objectNameToFieldsMap(currentObjectName).get(currentObjectName).containsKey(currentFieldName);
+
+                    // If it is valid (yay!) - update the object name for the next iteration
+                    if (fieldIsValid) {
+
+                        try {
+
+                            // Describe the field
+                            Schema.DescribeFieldResult fieldDescribe = objectNameToFieldsMap(currentObjectName).get(currentObjectName).get(currentFieldName).getDescribe();
+
+                            // For name pointinng fields (fields with multiple object lookups. Eg. WhatId, WhoId etc)
+                            if (fieldDescribe.isNamePointing()) {
+
+                                // We're just going to trust it's ok.
+                                // The merge will fall over if it's not ok, but the user
+                                // can be responsible for that.
+                                return true;
+                            }
+                            else {
+                                // Run the get describe to get the parent field
+                                // Will struggle if the lookup looks up to multiple
+                                currentObjectName = fieldDescribe.getReferenceTo()[0].getDescribe().getName();
+                            }
+                        }
+                        catch (Exception ex) {
+
+                            system.debug(
+                                'Could not get object name for lookup field ' + 
+                                currentObjectName + '.' + currentFieldName + ': ' + 
+                                ex.getMessage() + '\n\n' + ex.getStackTraceString()
+                            );
+
+                            return false;
+                        }
+                    }
+                    else {
+
+                        // If failed, return false
+                        return fieldIsValid;
+                    }
+                }
+            }
+        }
+
+        return fieldIsValid;
+    }
+
+    /**
+    *   @author Ben Edwards (ben@edwards.nz)
+    *   @description Build a map of Object API name to set of API fields. Used to determine if fields exist before executing the query
+    *   @return Map of Object API name to set of API fields
+    **/
+    public static Map<String, Map<String, Schema.SObjectField>> objectNameToFieldsMap;
+    public static Map<String, Map<String, Schema.SObjectField>> objectNameToFieldsMap (String objectName) {
+
+        // If blank, instantiate new map
+        if (objectNameToFieldsMap == null) {
+            objectNameToFieldsMap = new Map<String, Map<String, Schema.SObjectField>>();
+        }
+
+        // If the object name doesn't exist in the map, add it.
+        // If it does exist, no need to do anything as the fields will already be included
+        if (!objectNameToFieldsMap.containsKey(objectName)) {
+
+            objectNameToFieldsMap.put(
+                objectName,
+                Schema.getGlobalDescribe().get(objectName).getDescribe().fields.getMap()
+            );
+        }
+
+        return objectNameToFieldsMap;
+    }
+
     // Custom Exceptions
-    public class MergeFieldUtilityException extends Exception {}
+    public class FieldMergeUtilException extends Exception {}
     
 }
