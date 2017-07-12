@@ -58,28 +58,38 @@ public class FieldMergeUtil {
                 // Run through the list but skip the last item (the field)
                 for (Integer i = 0; i < objectsAndField.size() - 1; i++) {
 
-                    // Get the new record to draw data from
-                    theRecordForData = theRecordForData.getSObject(objectsAndField[i]);
+                    // Only run if not null
+                    // Will be null if the lookup field is blank
+                    if (theRecordForData != null) {
+
+                        // Get the new record to draw data from
+                        theRecordForData = theRecordForData.getSObject(objectsAndField[i]);
+                    }
                 }
 
                 // Since we should have the correct record now we can replace the list with only it's last item (the field)
                 objectsAndField = new List<String>{objectsAndField[objectsAndField.size()-1]};
             }
 
+            // Default merge value to blank string
             String mergeValue = '';
-            // Attempt to replace the merge value. If it fails, it will return a blank value
-            try {
 
-                mergeValue = String.valueOf(theRecordForData.get(objectsAndField[0]));
-            }
-            catch (Exception ex) {
+            // Process if the source record isn't null
+            if (theRecordForData != null) {
 
-                system.debug('### Error processing merge field "' + mergeField + '": ' + ex.getMessage() + '\n\n' + ex.getStackTraceString());
+                // Attempt to replace the merge value. If it fails, it will return a blank value
+                try {
+
+                    mergeValue = String.valueOf(theRecordForData.get(objectsAndField[0]));
+                }
+                catch (Exception ex) {
+
+                    system.debug('### Error processing merge field "' + mergeField + '": ' + ex.getMessage() + '\n\n' + ex.getStackTraceString());
+                }
             }
 
             // Replace the matching field name with the value
             stringToMerge = stringToMerge.replace(startPattern + mergeField + endPattern, mergeValue);
-
         }
 
         // Return the string with all the merge fields replaced with their values, yay!
