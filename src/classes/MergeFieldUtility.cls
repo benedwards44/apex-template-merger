@@ -1,24 +1,29 @@
 /**
-* @author Ben Edwards (ben@edwards.nz)
+* @author Ben Edwards (ben@cloudinit.nz)
 * @date 2017-07-12
 * @description Take a given string with merge fields and replace with values
 **/
 public class FieldMergeUtil {
 
+    // Set default start and end patterns
+    // Can be changed or overriden in the methods
+    public static final String DEFAULT_START_PATTERN = '{!';
+    public static final String DEFAULT_END_PATTERN = '}';
+
     /**
-    *   @author Ben Edwards (ben@edwards.nz)
+    *   @author Ben Edwards (ben@cloudinit.nz)
     *   @description Generate the string with the replaced values
     *   @return Returns the string with all merge fields replaced with values
     **/
     public static String replaceMergeFieldsWithValues (String stringToMerge, String recordId) {
 
         // Return the string with all the merge fields replaced with their values, yay!
-        return replaceMergeFieldsWithValues ('{!', '}', stringToMerge, recordId);
+        return replaceMergeFieldsWithValues (DEFAULT_START_PATTERN, DEFAULT_END_PATTERN, stringToMerge, recordId);
     }
 
 
     /**
-    *   @author Ben Edwards (ben@edwards.nz)
+    *   @author Ben Edwards (ben@cloudinit.nz)
     *   @description Generate the string with the replaced values
     *   @return Returns the string with all merge fields replaced with values
     **/
@@ -131,9 +136,22 @@ public class FieldMergeUtil {
         return Pattern.compile(theRegex);
     }
 
+    /**
+    *   @author Ben Edwards (ben@cloudinit.nz)
+    *   @description Do a dynamic SOQL query to get the record and required fields for the merging
+    *   @return Return the SObject record
+    **/
+    public static SObject getRecord (String stringToMerge, String recordId) {
+
+        // Get the object name based on the recordId
+        String objectName = ((Id) recordId).getSObjectType().getDescribe().getName();
+
+        return getRecord (DEFAULT_START_PATTERN, DEFAULT_END_PATTERN, stringToMerge, objectName, recordId);
+    }
+
 
     /**
-    *   @author Ben Edwards (ben@edwards.nz)
+    *   @author Ben Edwards (ben@cloudinit.nz)
     *   @description Do a dynamic SOQL query to get the record and required fields for the merging
     *   @return Return the SObject record
     **/
@@ -169,7 +187,7 @@ public class FieldMergeUtil {
     }
 
     /**
-    *   @author Ben Edwards (ben@edwards.nz)
+    *   @author Ben Edwards (ben@cloudinit.nz)
     *   @description Return true if the field is a valid field
     *   @return True for valid field, false for invalid
     **/
@@ -268,7 +286,7 @@ public class FieldMergeUtil {
     }
 
     /**
-    *   @author Ben Edwards (ben@edwards.nz)
+    *   @author Ben Edwards (ben@cloudinit.nz)
     *   @description Build a map of Object API name to set of API fields. Used to determine if fields exist before executing the query
     *   @return Map of Object API name to set of API fields
     **/
