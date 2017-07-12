@@ -12,13 +12,25 @@ public class FieldMergeUtil {
 
     /**
     *   @author Ben Edwards (ben@cloudinit.nz)
-    *   @description Generate the string with the replaced values
+    *   @description Generate the string with the replaced values. Takes the record Id and executes the query as needed
     *   @return Returns the string with all merge fields replaced with values
     **/
     public static String replaceMergeFieldsWithValues (String stringToMerge, String recordId) {
 
         // Return the string with all the merge fields replaced with their values, yay!
         return replaceMergeFieldsWithValues (DEFAULT_START_PATTERN, DEFAULT_END_PATTERN, stringToMerge, recordId);
+    }
+
+    /**
+    *   @author Ben Edwards (ben@cloudinit.nz)
+    *   @description Generate the string with the replaced values. Takes an already accepted SOBject record (so you need to make sure all necessary fields are queried)
+    *                This method is bulkified, so could be done in a for loop, assuming query is executed first
+    *   @return Returns the string with all merge fields replaced with values
+    **/
+    public static String replaceMergeFieldsWithValues (String stringToMerge, SObject record) {
+
+        // Return the string with all the merge fields replaced with their values, yay!
+        return replaceMergeFieldsWithValues (DEFAULT_START_PATTERN, DEFAULT_END_PATTERN, stringToMerge, record);
     }
 
 
@@ -29,20 +41,31 @@ public class FieldMergeUtil {
     **/
     public static String replaceMergeFieldsWithValues (String startPattern, String endPattern, String stringToMerge, String recordId) {
 
+        // Get the object name based on the recordId
+        String objectName = ((Id) recordId).getSObjectType().getDescribe().getName();
+
+        // Query for the SObject and all related fields
+        SObject theRecord = getRecord (startPattern, endPattern, stringToMerge, objectName, recordId);
+
+        return replaceMergeFieldsWithValues(startPattern, endPattern, stringToMerge, theRecord);
+    }
+
+
+    /**
+    *   @author Ben Edwards (ben@cloudinit.nz)
+    *   @description Generate the string with the replaced values
+    *   @return Returns the string with all merge fields replaced with values
+    **/
+    public static String replaceMergeFieldsWithValues (String startPattern, String endPattern, String stringToMerge, SObject theRecord) {
+
         // If blank, return a blank value
         if (String.isBlank(stringToMerge)) {
 
             return stringToMerge;
         }
 
-        // Get the object name based on the recordId
-        String objectName = ((Id) recordId).getSObjectType().getDescribe().getName();
-
         // The matcher which returns the matched fields from the given string
         Matcher theMatcher = thePattern(startPattern, endPattern).matcher(stringToMerge);
-
-        // Query for the SObject and all related fields
-        SObject theRecord = getRecord (startPattern, endPattern, stringToMerge, objectName, recordId);
 
         // Iterate over each match
         while (theMatcher.find()) {
