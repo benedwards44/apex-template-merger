@@ -116,6 +116,9 @@ public class FieldMergeUtil {
                 }
             }
 
+            // Set any null values to an empty string
+            mergeValue = mergeValue == null ? '' : mergeValue;
+
             // Replace the matching field name with the value
             stringToMerge = stringToMerge.replace(startPattern + mergeField + endPattern, mergeValue);
         }
