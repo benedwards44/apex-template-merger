@@ -1,11 +1,11 @@
 # apex-template-merging
 Custom Apex utility for merging strings containing merge fields and replacing with values
 
-This utility provides a way to pass a string containing merge fields using `{{ field_name }}` syntax, and getting the SObject record value.
+This utility provides a way to pass a string containing merge fields using `{!field_name}` syntax, and getting the SObject record value.
 
 Eg.
 ```
-String myTemplate = 'Hey {{ FirstName }}, your email address is {{ Email }} and account name is {{ Account.Name }}';
+String myTemplate = 'Hey {!FirstName}, your email address is {!Email} and account name is {!Account.Name}';
 
 String myResult = MergeFieldUtility.replaceMergeFieldsWithValues (
   myTemplate, // The string to merge
