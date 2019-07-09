@@ -18,7 +18,7 @@ system.debug(myResult);
 ```
 
 <br/>
-<a href="https://githubsfdeploy.herokuapp.com?owner=benedwards44&repo=apex-template-merger&ref=master">
+<a href="https://githubsfdeploy.herokuapp.com?owner=benedwards44&repo=apex-template-merger&ref=master"></a>
   <img alt="Deploy to Salesforce"
        src="https://raw.githubusercontent.com/afawcett/githubsfdeploy/master/deploy.png">
 </a>
